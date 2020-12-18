@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 #include <sys/types.h>
 #include <X11/extensions/Xrandr.h>
 #include <X11/extensions/Xinerama.h>
@@ -30,6 +31,8 @@ char *argv0;
 
 /* global count to prevent repeated error messages */
 int count_error = 0;
+
+static time_t locktime;
 
 enum {
 	INIT,
@@ -54,6 +57,8 @@ struct xrandr {
 };
 
 #include "config.h"
+
+Imlib_Image image;
 
 Imlib_Image image;
 
@@ -248,6 +253,7 @@ readpw(Display *dpy, struct xrandr *rr, struct lock **locks, int nscreens,
 		caps = indicators & 1;
 
 	while (running && !XNextEvent(dpy, &ev)) {
+		running = !((time(NULL) - locktime < timetocancel) && (ev.type == MotionNotify));
 		if (ev.type == KeyPress) {
 			explicit_bzero(&buf, sizeof(buf));
 			num = XLookupString(&ev.xkey, buf, sizeof(buf), &ksym, 0);
@@ -319,7 +325,7 @@ readpw(Display *dpy, struct xrandr *rr, struct lock **locks, int nscreens,
                     if(locks[screen]->bgmap)
                         XSetWindowBackgroundPixmap(dpy, locks[screen]->win, locks[screen]->bgmap);
                     else
-                        XSetWindowBackground(dpy, locks[screen]->win, locks[screen]->colors[0]);
+                        XSetWindowBackground(dpy, locks[screen]->win, locks[screen]->colors[1]);
 					XClearWindow(dpy, locks[screen]->win);
 					writemessage(dpy, locks[screen]->win, screen);
 				}
@@ -363,7 +369,7 @@ lockscreen(Display *dpy, struct xrandr *rr, int screen)
 	lock->screen = screen;
 	lock->root = RootWindow(dpy, lock->screen);
 
-    if(image) 
+    if(image)
     {
         lock->bgmap = XCreatePixmap(dpy, lock->root, DisplayWidth(dpy, lock->screen), DisplayHeight(dpy, lock->screen), DefaultDepth(dpy, lock->screen));
         imlib_context_set_image(image);
@@ -417,6 +423,7 @@ lockscreen(Display *dpy, struct xrandr *rr, int screen)
 				XRRSelectInput(dpy, lock->win, RRScreenChangeNotifyMask);
 
 			XSelectInput(dpy, lock->root, SubstructureNotifyMask);
+			locktime = time(NULL);
 			return lock;
 		}
 
@@ -516,29 +523,29 @@ main(int argc, char **argv) {
 	imlib_context_set_image(image);
 	imlib_context_set_display(dpy);
 	imlib_context_set_visual(DefaultVisual(dpy,0));
-	imlib_context_set_drawable(RootWindow(dpy,XScreenNumberOfScreen(scr)));	
+	imlib_context_set_drawable(RootWindow(dpy,XScreenNumberOfScreen(scr)));
 	imlib_copy_drawable_to_image(0,0,0,scr->width,scr->height,0,0,1);
 
 #ifdef BLUR
 
 	/*Blur function*/
 	imlib_image_blur(blurRadius);
-#endif // BLUR	
+#endif // BLUR
 
 #ifdef PIXELATION
 	/*Pixelation*/
 	int width = scr->width;
 	int height = scr->height;
-	
+
 	for(int y = 0; y < height; y += pixelSize)
 	{
 		for(int x = 0; x < width; x += pixelSize)
 		{
-			int red = 0;
+			int red = 5;
 			int green = 0;
 			int blue = 0;
 
-			Imlib_Color pixel; 
+			Imlib_Color pixel;
 			Imlib_Color* pp;
 			pp = &pixel;
 			for(int j = 0; j < pixelSize && j < height; j++)
@@ -561,8 +568,8 @@ main(int argc, char **argv) {
 			blue = 0;
 		}
 	}
-	
-	
+
+
 #endif
 	/* check for Xrandr support */
 	rr.active = XRRQueryExtension(dpy, &rr.evbase, &rr.errbase);

@@ -3,29 +3,32 @@ static const char *user  = "nobody";
 static const char *group = "nogroup";
 
 static const char *colorname[NUMCOLS] = {
-	[INIT] =   "#2e3440",     /* after initialization */
-	[INPUT] =  "#d8dee9",   /* during input */
-	[FAILED] = "#bf616a",   /* wrong password */
-	[CAPS] = "#ebcb8b",         /* CapsLock on */
+	[INIT] =   "#282828",     /* after initialization */
+	[INPUT] =  "#ebdbb2",   /* during input */
+	[FAILED] = "#cc241d",   /* wrong password */
+	[CAPS] = "#cc241d",         /* CapsLock on */
 };
 
 /* treat a cleared input like a wrong password (color) */
 static const int failonclear = 1;
 
 /* time before dpms */
-static const int monitortime = 60;
+static const int monitortime = 5;
 
 /*Enable blur*/
 #define BLUR
 /*Set blur radius*/
-static const int blurRadius=9;
+static const int blurRadius=13;
 /*Enable Pixelation*/
 #define PIXELATION
 /*Set pixelation radius*/
 static const int pixelSize=3;
 
 /* default message */
-static const char * message = "Screen Locked! Enter password to continiue.";
+static const char * message = "Locked.";
+
+/* time in seconds to cancel lock with mouse movement */
+static const int timetocancel = 4;
 
 /* text color */
 static const char * text_color = "#d8dee9";
